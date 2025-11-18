@@ -92,10 +92,14 @@ classdef MatViewerTool < matlab.apps.AppBase
         
         % 预处理控制组件
         ShowOriginalCheck       matlab.ui.control.CheckBox  % 保留原图复选框
-        ShowPrep1Btn            matlab.ui.control.Button    % 改为按钮
-        ShowPrep2Btn            matlab.ui.control.Button    % 改为按钮
-        ShowPrep3Btn            matlab.ui.control.Button    % 改为按钮
-        PrepTagPanel            matlab.ui.container.Panel
+        ShowPrep1Btn            matlab.ui.control.Button    % CFAR按钮
+        ShowPrep2Btn            matlab.ui.control.Button    % 非相参积累按钮
+        ShowCoherentBtn         matlab.ui.control.Button    % 相参积累按钮
+        ShowDetectionBtn        matlab.ui.control.Button    % 检测按钮
+        ShowRecognitionBtn      matlab.ui.control.Button    % 识别按钮
+        ShowPrep3Btn            matlab.ui.control.Button    % 预处理3按钮
+        DynamicPrepPanel        matlab.ui.container.Panel   % 动态预处理面板
+        PrepTagPanel            matlab.ui.container.Panel   % 预处理标签面板
         AddPrepBtn              matlab.ui.control.Button
         ClearPrepBtn            matlab.ui.control.Button
         
