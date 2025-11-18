@@ -51,33 +51,6 @@ function output_data = default_detection(input_data, params)
     output_data.name = '检测';  % 重要：设置name字段
     output_data.timestamp = datetime('now');
 
-    % 创建figure并缓存
-    try
-        fig = figure('Visible', 'off');
-        ax = axes('Parent', fig);
-
-        % 显示检测结果（原图+检测标记）
-        imagesc(ax, 20*log10(abs(input_data) + eps));
-        hold(ax, 'on');
-
-        % 在检测点上叠加标记
-        [row, col] = find(detection_mask);
-        if ~isempty(row)
-            plot(ax, col, row, 'r.', 'MarkerSize', 8);
-        end
-
-        hold(ax, 'off');
-        axis(ax, 'on');
-        colorbar(ax);
-        title(ax, sprintf('检测结果 - 阈值:%.1fdB, 检测数:%d', threshold_db, output_data.num_detections));
-        xlabel(ax, '距离单元');
-        ylabel(ax, '多普勒单元');
-
-        output_data.cached_figure = fig;
-    catch ME
-        warning('创建figure失败：%s', ME.message);
-    end
-
 end
 
 function value = getParam(params, name, default_value)

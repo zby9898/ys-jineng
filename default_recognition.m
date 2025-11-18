@@ -58,35 +58,6 @@ function output_data = default_recognition(input_data, params)
     end
     output_data.class_counts = class_counts;
 
-    % 创建figure并缓存
-    try
-        fig = figure('Visible', 'off');
-
-        % 创建2个子图
-        subplot(1, 2, 1);
-        imagesc(20*log10(abs(input_data) + eps));
-        axis on;
-        colorbar;
-        title('原始幅度(dB)');
-        xlabel('距离单元');
-        ylabel('多普勒单元');
-
-        subplot(1, 2, 2);
-        imagesc(label_matrix);
-        axis on;
-        colorbar;
-        title(sprintf('识别结果 - %d类', num_classes));
-        xlabel('距离单元');
-        ylabel('多普勒单元');
-
-        % 添加整体标题
-        sgtitle(sprintf('识别分析 - 方法:%s', method));
-
-        output_data.cached_figure = fig;
-    catch ME
-        warning('创建figure失败：%s', ME.message);
-    end
-
 end
 
 function value = getParam(params, name, default_value)

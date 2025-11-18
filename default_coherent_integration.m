@@ -58,21 +58,6 @@ function output_data = default_coherent_integration(input_data, params)
     output_data.name = '相参积累';  % 重要：设置name字段
     output_data.timestamp = datetime('now');
 
-    % 创建figure并缓存
-    try
-        fig = figure('Visible', 'off');
-        ax = axes('Parent', fig);
-        imagesc(ax, 20*log10(abs(output_data.complex_matrix) + eps));
-        axis(ax, 'on');
-        colorbar(ax);
-        title(ax, sprintf('相参积累结果 - 积累长度:%d', integration_length));
-        xlabel(ax, '距离单元');
-        ylabel(ax, '多普勒单元');
-        output_data.cached_figure = fig;
-    catch ME
-        warning('创建figure失败：%s', ME.message);
-    end
-
 end
 
 function value = getParam(params, name, default_value)
