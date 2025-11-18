@@ -3650,34 +3650,29 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 获取已处理的预处理列表
                 processedItems = getProcessedPreprocessingItems(app);
 
-                % 所有可用的预处理类型（自定义始终可用）
-                baseTypes = {'-- 请选择 --', '自定义...'};
-
+                % 根据处理对象确定可用的预处理类型
                 if strcmp(selectedObj, '-- 请选择 --')
                     % 未选择处理对象时，显示所有类型
-                    prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+                    availableTypes = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+                elseif strcmp(selectedObj, '相参积累')
+                    % 处理对象是"相参积累"时，只能选CFAR、识别、自定义
+                    availableTypes = {'-- 请选择 --', 'CFAR', '识别', '自定义...'};
                 elseif strcmp(selectedObj, '非相参积累')
-                    % 选择非相参时，只能选择"检测"和"自定义"
-                    prepTypeDropdown.Items = [baseTypes(1), {'检测'}, baseTypes(2)];
-                elseif any(strcmp(processedItems, selectedObj)) && ~strcmp(selectedObj, '当前帧原图')
-                    % 选择了已处理的预处理，判断是否为"相参"类型
-                    % 这里假设相参类型的预处理名称包含"相参"或者在特定列表中
-                    isCoherent = contains(selectedObj, '相参') || strcmp(selectedObj, 'CFAR');
-                    if isCoherent
-                        % 相参类型：CFAR、识别、自定义
-                        prepTypeDropdown.Items = [baseTypes(1), {'CFAR', '识别'}, baseTypes(2)];
-                    else
-                        % 非相参类型：检测、自定义
-                        prepTypeDropdown.Items = [baseTypes(1), {'检测'}, baseTypes(2)];
-                    end
+                    % 处理对象是"非相参积累"时，只能选检测、自定义
+                    availableTypes = {'-- 请选择 --', '检测', '自定义...'};
                 else
-                    % 当前帧原图或其他情况，显示所有类型
-                    prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+                    % 处理对象是"当前帧原图"、"CFAR"或其他已处理的预处理时，都可以选
+                    availableTypes = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
                 end
 
+                % 更新下拉框选项
+                prepTypeDropdown.Items = availableTypes;
+
                 % 如果当前选择的类型不在新的列表中，重置为"-- 请选择 --"
-                if ~any(strcmp(prepTypeDropdown.Items, currentType))
+                if ~any(strcmp(availableTypes, currentType))
                     prepTypeDropdown.Value = '-- 请选择 --';
+                else
+                    prepTypeDropdown.Value = currentType;
                 end
             end
             
