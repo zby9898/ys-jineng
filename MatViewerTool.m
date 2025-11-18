@@ -5241,7 +5241,7 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
 
         function updateMultiView(app)
-            % 更新多视图显示（固定映射关系，确保标题和内容对应）
+            % 更新多视图显示（动态映射关系，按预处理顺序对应ImageAxes）
 
             if isempty(app.MatData) || app.CurrentIndex > length(app.MatData)
                 return;
@@ -5259,77 +5259,79 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.ImageAxes3.Visible = 'off';
             app.ImageAxes4.Visible = 'off';
 
-            % 固定映射关系：
-            % ImageAxes1 = 原图 (viewIndex 1)
-            % ImageAxes2 = CFAR (viewIndex 2)
-            % ImageAxes3 = 非相参积累 (viewIndex 3)
-            % ImageAxes4 = 自定义预处理 (viewIndex 4)
+            % 动态收集所有要显示的视图数据
+            viewList = {};  % {data, title, sourceColumn}的cell数组
 
-            % 检查每个视图是否应该显示
-            shouldShow = [false, false, false, false];
-
-            % 1. 原图
+            % 1. 收集原图
             if app.ShowOriginalCheck.Value
-                shouldShow(1) = true;
+                viewList{end+1} = struct('data', app.MatData{app.CurrentIndex}, 'title', '原图', 'sourceColumn', 0);
             end
 
-            % 2-4. 预处理结果（只有当该帧有对应的预处理结果时才显示）
+            % 2. 收集所有预处理结果（按顺序：CFAR → 非相参积累 → 自定义预处理）
             if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
-                % CFAR (列2)
-                if ~isempty(app.PreprocessingResults{app.CurrentIndex, 2})
-                    shouldShow(2) = true;
-                end
-                % 非相参积累 (列3)
-                if ~isempty(app.PreprocessingResults{app.CurrentIndex, 3})
-                    shouldShow(3) = true;
-                end
-                % 自定义预处理 (列4)
-                if size(app.PreprocessingResults, 2) >= 4 && ~isempty(app.PreprocessingResults{app.CurrentIndex, 4})
-                    shouldShow(4) = true;
+                % 遍历PreprocessingResults的第2-4列
+                for col = 2:min(4, size(app.PreprocessingResults, 2))
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, col})
+                        result = app.PreprocessingResults{app.CurrentIndex, col};
+
+                        % 获取标题（优先从结果中的name字段获取）
+                        if isstruct(result) && isfield(result, 'name')
+                            title = result.name;
+                        elseif isstruct(result) && isfield(result, 'preprocessing_info') && isfield(result.preprocessing_info, 'name')
+                            title = result.preprocessing_info.name;
+                        else
+                            % 如果没有name字段，使用默认标题
+                            if col == 2
+                                title = 'CFAR';
+                            elseif col == 3
+                                title = '非相参积累';
+                            elseif col == 4
+                                title = '自定义预处理';
+                            else
+                                title = sprintf('预处理%d', col-1);
+                            end
+                        end
+
+                        viewList{end+1} = struct('data', result, 'title', title, 'sourceColumn', col);
+                    end
                 end
             end
-
-            % 统计需要显示的视图数量和索引
-            visibleIndices = find(shouldShow);
-            numViews = length(visibleIndices);
 
             % 如果没有任何视图，至少显示原图
-            if numViews == 0
-                shouldShow(1) = true;
-                visibleIndices = 1;
-                numViews = 1;
+            if isempty(viewList)
+                viewList{end+1} = struct('data', app.MatData{app.CurrentIndex}, 'title', '原图', 'sourceColumn', 0);
             end
 
-            % 所有axes的引用（按固定顺序）
+            % 统计需要显示的视图数量
+            numViews = length(viewList);
+
+            % 所有axes的引用（按顺序分配）
             allAxes = {app.ImageAxes1, app.ImageAxes2, app.ImageAxes3, app.ImageAxes4};
 
             % 根据需要显示的视图数量调整布局
             switch numViews
                 case 1
                     % 单图全屏
-                    viewIdx = visibleIndices(1);
-                    ax = allAxes{viewIdx};
+                    ax = allAxes{1};
                     ax.Visible = 'on';
                     ax.Layout.Row = [1 2];
                     ax.Layout.Column = [1 2];
-                    displayImageInAxes(app, ax, viewIdx);
+                    displayImageInAxes(app, ax, viewList{1}.data, viewList{1}.title, viewList{1}.sourceColumn);
 
                 case 2
                     % 两图横向排列
                     for i = 1:2
-                        viewIdx = visibleIndices(i);
-                        ax = allAxes{viewIdx};
+                        ax = allAxes{i};
                         ax.Visible = 'on';
                         ax.Layout.Row = [1 2];
                         ax.Layout.Column = i;
-                        displayImageInAxes(app, ax, viewIdx);
+                        displayImageInAxes(app, ax, viewList{i}.data, viewList{i}.title, viewList{i}.sourceColumn);
                     end
 
                 case 3
                     % 三图：上面2个，左下1个
                     for i = 1:3
-                        viewIdx = visibleIndices(i);
-                        ax = allAxes{viewIdx};
+                        ax = allAxes{i};
                         ax.Visible = 'on';
                         if i <= 2
                             ax.Layout.Row = 1;
@@ -5338,18 +5340,17 @@ classdef MatViewerTool < matlab.apps.AppBase
                             ax.Layout.Row = 2;
                             ax.Layout.Column = 1;
                         end
-                        displayImageInAxes(app, ax, viewIdx);
+                        displayImageInAxes(app, ax, viewList{i}.data, viewList{i}.title, viewList{i}.sourceColumn);
                     end
 
                 case 4
                     % 四图：2x2
                     for i = 1:4
-                        viewIdx = visibleIndices(i);
-                        ax = allAxes{viewIdx};
+                        ax = allAxes{i};
                         ax.Visible = 'on';
                         ax.Layout.Row = ceil(i/2);
                         ax.Layout.Column = mod(i-1, 2) + 1;
-                        displayImageInAxes(app, ax, viewIdx);
+                        displayImageInAxes(app, ax, viewList{i}.data, viewList{i}.title, viewList{i}.sourceColumn);
                     end
             end
 
@@ -5357,47 +5358,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             updateCloseButtonPositions(app);
         end
         
-        function displayImageInAxes(app, ax, viewIndex)
+        function displayImageInAxes(app, ax, data, titleStr, sourceColumn)
             % 在指定axes中显示图像
-            % viewIndex: 1=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理
+            % ax: 要显示的axes
+            % data: 要显示的数据
+            % titleStr: 标题字符串
+            % sourceColumn: 数据来源列（0=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理）
 
             cla(ax);
-
-            % 获取数据和标题（确保标题与显示内容严格对应）
-            if viewIndex == 1
-                % 显示原图
-                data = app.MatData{app.CurrentIndex};
-                titleStr = '原图';
-            else
-                % 显示预处理结果
-                if ~isempty(app.PreprocessingResults) && ...
-                   app.CurrentIndex <= size(app.PreprocessingResults, 1) && ...
-                   viewIndex <= size(app.PreprocessingResults, 2) && ...
-                   ~isempty(app.PreprocessingResults{app.CurrentIndex, viewIndex})
-                    % 有预处理结果
-                    data = app.PreprocessingResults{app.CurrentIndex, viewIndex};
-
-                    % 优先从结果数据中获取名称，确保标题准确
-                    if isstruct(data) && isfield(data, 'name')
-                        titleStr = data.name;
-                    else
-                        % 如果结果中没有名称，根据viewIndex确定默认标题
-                        if viewIndex == 2
-                            titleStr = 'CFAR';
-                        elseif viewIndex == 3
-                            titleStr = '非相参积累';
-                        elseif viewIndex == 4
-                            titleStr = '自定义预处理';
-                        else
-                            titleStr = sprintf('预处理%d', viewIndex);
-                        end
-                    end
-                else
-                    % 该帧没有此预处理结果，不应该显示
-                    % 这个分支理论上不应该被执行到（因为updateMultiView已经检查过）
-                    return;
-                end
-            end
             
             % 优先检查是否有cached_figure（figure缓存）
             if isfield(data, 'additional_outputs') && isfield(data.additional_outputs, 'cached_figure')
@@ -5521,19 +5489,19 @@ classdef MatViewerTool < matlab.apps.AppBase
                 displayDefaultImage(app, ax, complexMatrix, titleStr);
             end
             % 设置标题功能
-            if viewIndex == 1
+            if sourceColumn == 0
                 % 原图：普通标题
                 title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
             else
                 % 预处理视图：添加关闭功能
-                titleStr = sprintf('%s  [关闭×]', titleStr);
-                t = title(ax, titleStr, 'FontSize', 10, 'Interpreter', 'none');
-                
-                % 标题文本添加点击事件
-                t.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
-                
+                titleText = sprintf('%s  [关闭×]', titleStr);
+                t = title(ax, titleText, 'FontSize', 10, 'Interpreter', 'none');
+
+                % 标题文本添加点击事件，使用sourceColumn而不是viewIndex
+                t.ButtonDownFcn = @(~,~)closeSubView(app, sourceColumn);
+
                 % 改变鼠标指针为手型（提示可点击）
-                ax.ButtonDownFcn = @(~,~)closeSubView(app, viewIndex);
+                ax.ButtonDownFcn = @(~,~)closeSubView(app, sourceColumn);
             end
         end
 
@@ -6225,37 +6193,23 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
         end
 
-        function closeSubView(app, axesIndex)
+        function closeSubView(app, sourceColumn)
             % 关闭指定的子视图
-            % axesIndex: 2, 3, 4 (1是原图，不能关闭)
-            
-            if axesIndex == 1
+            % sourceColumn: 数据来源列（0=原图不能关闭, 2=CFAR, 3=非相参积累, 4=自定义预处理）
+
+            if sourceColumn == 0
                 % 原图不能关闭
                 return;
             end
-            
+
             % 清除该帧的预处理结果缓存
             if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
-                app.PreprocessingResults{app.CurrentIndex, axesIndex} = [];
+                if sourceColumn >= 2 && sourceColumn <= size(app.PreprocessingResults, 2)
+                    app.PreprocessingResults{app.CurrentIndex, sourceColumn} = [];
+                end
             end
-            
-            % 隐藏视图
-            switch axesIndex
-                case 2
-                    app.ImageAxes2.Visible = 'off';
-                    app.CloseBtn2.Visible = 'off';
-                    cla(app.ImageAxes2);
-                case 3
-                    app.ImageAxes3.Visible = 'off';
-                    app.CloseBtn3.Visible = 'off';
-                    cla(app.ImageAxes3);
-                case 4
-                    app.ImageAxes4.Visible = 'off';
-                    app.CloseBtn4.Visible = 'off';
-                    cla(app.ImageAxes4);
-            end
-            
-            % 重新计算布局
+
+            % 重新计算布局（updateMultiView会自动处理所有显示/隐藏逻辑）
             updateMultiView(app);
         end
 
@@ -6269,42 +6223,18 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
 
         function updateCloseButtonPositions(app)
-            % 动态更新关闭按钮的位置（根据 UIAxes 的位置）
-            
-            % 如果按钮不存在，直接返回
-            if ~isvalid(app.CloseBtn2) || ~isvalid(app.CloseBtn3) || ~isvalid(app.CloseBtn4)
-                return;
-            end
-            
-            % 定义按钮大小
-            btnWidth = 10;
-            btnHeight = 10;
-            margin = 5;  % 距离坐标轴右上角的距离
-            
-            % 为每个可见的 Axes 计算按钮位置
-            axesList = {app.ImageAxes2, app.ImageAxes3, app.ImageAxes4};
-            btnList = {app.CloseBtn2, app.CloseBtn3, app.CloseBtn4};
-            
-            for i = 1:3
-                ax = axesList{i};
-                btn = btnList{i};
-                
-                if strcmp(ax.Visible, 'on')
-                    % 获取坐标轴在面板中的像素位置
-                    axPos = getpixelposition(ax, true);  % 相对于父容器
-                    
-                    % 计算按钮位置（右上角）
-                    btnX = axPos(1) + axPos(3) - btnWidth - margin;
-                    btnY = axPos(2) + axPos(4) - btnHeight - margin;
-                    
-                    btn.Position = [btnX, btnY, btnWidth, btnHeight];
-                    btn.Visible = 'on';
-                    % 将按钮提到最前面（确保不被 GridLayout 遮挡）
-                    % uistack(btn, 'top'); 但是显示位置一直调不好 算了
+            % 动态更新关闭按钮的位置
+            % 在新的动态映射方案中，使用标题点击关闭功能，浮动关闭按钮不再使用
 
-                else
-                    btn.Visible = 'off';
-                end
+            % 隐藏所有浮动关闭按钮
+            if isvalid(app.CloseBtn2)
+                app.CloseBtn2.Visible = 'off';
+            end
+            if isvalid(app.CloseBtn3)
+                app.CloseBtn3.Visible = 'off';
+            end
+            if isvalid(app.CloseBtn4)
+                app.CloseBtn4.Visible = 'off';
             end
         end
 
