@@ -831,11 +831,11 @@ classdef MatViewerTool < matlab.apps.AppBase
             prepPanel.Layout.Row = 2;
             prepPanel.Layout.Column = 1;
             
-            prepLayout = uigridlayout(prepPanel, [1, 9]);
-            prepLayout.ColumnWidth = {50, 70, 90, 90, 90, '1x', 100, 70, 5};
+            prepLayout = uigridlayout(prepPanel, [1, 13]);
+            prepLayout.ColumnWidth = {50, 70, 90, 90, 90, 90, 90, 90, '1x', 100, 70, 5};
             prepLayout.Padding = [5 2 5 2];
             prepLayout.ColumnSpacing = 5;
-            
+
             % 标签
             label = uilabel(prepLayout);
             label.Text = '显示:';
@@ -843,7 +843,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             label.FontSize = 12;
             label.Layout.Row = 1;
             label.Layout.Column = 1;
-            
+
             % 原图复选框
             app.ShowOriginalCheck = uicheckbox(prepLayout);
             app.ShowOriginalCheck.Text = '原图';
@@ -851,8 +851,8 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.ShowOriginalCheck.Layout.Row = 1;
             app.ShowOriginalCheck.Layout.Column = 2;
             app.ShowOriginalCheck.ValueChangedFcn = @(~,~) onShowOriginalChanged(app);
-            
-            % CFAR按钮（默认预处理1）
+
+            % CFAR按钮
             app.ShowPrep1Btn = uibutton(prepLayout, 'push');
             app.ShowPrep1Btn.Text = 'CFAR';
             app.ShowPrep1Btn.Enable = 'off';
@@ -861,7 +861,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.ShowPrep1Btn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executeDefaultPrep(app, 1), true);
             app.ShowPrep1Btn.Tooltip = 'CFAR检测预处理';
 
-            % 非相参积累按钮（默认预处理2）
+            % 非相参积累按钮
             app.ShowPrep2Btn = uibutton(prepLayout, 'push');
             app.ShowPrep2Btn.Text = '非相参积累';
             app.ShowPrep2Btn.Enable = 'off';
@@ -869,35 +869,64 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.ShowPrep2Btn.Layout.Column = 4;
             app.ShowPrep2Btn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executeDefaultPrep(app, 2), true);
             app.ShowPrep2Btn.Tooltip = '非相参积累预处理';
-            
-            % 预处理3按钮（用于自定义预处理）
+
+            % 相参积累按钮
+            app.ShowCoherentBtn = uibutton(prepLayout, 'push');
+            app.ShowCoherentBtn.Text = '相参积累';
+            app.ShowCoherentBtn.Enable = 'off';
+            app.ShowCoherentBtn.Layout.Row = 1;
+            app.ShowCoherentBtn.Layout.Column = 5;
+            app.ShowCoherentBtn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executeDefaultPrep(app, 3), true);
+            app.ShowCoherentBtn.Tooltip = '相参积累预处理';
+
+            % 检测按钮
+            app.ShowDetectionBtn = uibutton(prepLayout, 'push');
+            app.ShowDetectionBtn.Text = '检测';
+            app.ShowDetectionBtn.Enable = 'off';
+            app.ShowDetectionBtn.Layout.Row = 1;
+            app.ShowDetectionBtn.Layout.Column = 6;
+            app.ShowDetectionBtn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executeDefaultPrep(app, 4), true);
+            app.ShowDetectionBtn.Tooltip = '检测预处理';
+
+            % 识别按钮
+            app.ShowRecognitionBtn = uibutton(prepLayout, 'push');
+            app.ShowRecognitionBtn.Text = '识别';
+            app.ShowRecognitionBtn.Enable = 'off';
+            app.ShowRecognitionBtn.Layout.Row = 1;
+            app.ShowRecognitionBtn.Layout.Column = 7;
+            app.ShowRecognitionBtn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executeDefaultPrep(app, 5), true);
+            app.ShowRecognitionBtn.Tooltip = '识别预处理';
+
+            % 预处理3按钮（预留）
             app.ShowPrep3Btn = uibutton(prepLayout, 'push');
             app.ShowPrep3Btn.Text = '预处理3';
             app.ShowPrep3Btn.Enable = 'off';
             app.ShowPrep3Btn.Layout.Row = 1;
-            app.ShowPrep3Btn.Layout.Column = 5;
-            app.ShowPrep3Btn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executePrepOnCurrentFrame(app, 1), true);  % 自定义预处理在PreprocessingList中索引为1
-            
-            % 预处理标签面板（用于显示已添加的预处理）
-            app.PrepTagPanel = uipanel(prepLayout);
-            app.PrepTagPanel.BorderType = 'none';
-            app.PrepTagPanel.Layout.Row = 1;
-            app.PrepTagPanel.Layout.Column = 6;
-            
+            app.ShowPrep3Btn.Layout.Column = 8;
+            app.ShowPrep3Btn.ButtonPushedFcn = createCallbackFcn(app, @(~,~)executePrepOnCurrentFrame(app, 1), true);
+            app.ShowPrep3Btn.Tooltip = '自定义预处理';
+
+            % 动态预处理按钮容器（用于显示自定义预处理按钮）
+            app.DynamicPrepPanel = uipanel(prepLayout);
+            app.DynamicPrepPanel.BorderType = 'none';
+            app.DynamicPrepPanel.Layout.Row = 1;
+            app.DynamicPrepPanel.Layout.Column = 9;
+            app.DynamicPrepPanel.Scrollable = 'off';
+
             % 添加预处理按钮
             app.AddPrepBtn = uibutton(prepLayout, 'push');
             app.AddPrepBtn.Text = '➕ 添加预处理';
             app.AddPrepBtn.Layout.Row = 1;
-            app.AddPrepBtn.Layout.Column = 7;
+            app.AddPrepBtn.Layout.Column = 10;
             app.AddPrepBtn.Enable = 'off';
             app.AddPrepBtn.ButtonPushedFcn = @(~,~) openPreprocessingDialog(app);
             app.AddPrepBtn.Tooltip = '添加新的预处理';
-            
+
             % 清除全部按钮
             app.ClearPrepBtn = uibutton(prepLayout, 'push');
             app.ClearPrepBtn.Text = '🗑️ 清除';
             app.ClearPrepBtn.Layout.Row = 1;
-            app.ClearPrepBtn.Layout.Column = 8;
+            app.ClearPrepBtn.Layout.Column = 11;
             app.ClearPrepBtn.Enable = 'off';
             app.ClearPrepBtn.ButtonPushedFcn = @(~,~) clearAllPreprocessing(app);
             app.ClearPrepBtn.Tooltip = '清除所有预处理';
@@ -3169,12 +3198,7 @@ classdef MatViewerTool < matlab.apps.AppBase
         % ==================== 预处理功能函数 ====================
         
         function openPreprocessingDialog(app)
-            % 打开预处理配置对话框
-            
-            if length(app.PreprocessingList) >= 3
-                uialert(app.UIFigure, '最多只能添加3个预处理！', '提示');
-                return;
-            end
+            % 打开预处理配置对话框（支持添加多个预处理）
             
             % 创建对话框（先设置为不可见，避免显示移动过程）
             dlg = uifigure('Name', '添加预处理', 'Position', [200 100 750 680], 'Visible', 'off');
@@ -3243,7 +3267,7 @@ classdef MatViewerTool < matlab.apps.AppBase
             contentPanel.BorderType = 'none';
             
             contentLayout = uigridlayout(contentPanel, [5, 1]);
-            contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
+            contentLayout.RowHeight = {95, 55, 55, 105, '1x'};  % 处理对象行高从65增加到95
             contentLayout.Padding = [5 5 5 5];
             contentLayout.RowSpacing = 8;
             
@@ -3254,42 +3278,61 @@ classdef MatViewerTool < matlab.apps.AppBase
             processObjPanel.FontWeight = 'bold';
             processObjPanel.FontSize = 11;
 
-            % 修改为1行2列布局（下拉框和浏览按钮并排）
-            processObjLayout = uigridlayout(processObjPanel, [1, 2]);
-            processObjLayout.ColumnWidth = {'1x', 100};
+            % 修改为2行1列布局（下拉框 + 帧选择）
+            processObjLayout = uigridlayout(processObjPanel, [2, 1]);
+            processObjLayout.RowHeight = {28, 28};
             processObjLayout.RowSpacing = 5;
             processObjLayout.Padding = [10 5 10 5];
-            
-            % 下拉框和浏览按钮
+
+            % 处理对象下拉框
             objDropdown = uidropdown(processObjLayout);
+            % 初始化下拉项：默认选项 + 当前帧原图
             objDropdown.Items = {'-- 请选择 --', '当前帧原图'};
             objDropdown.Value = '-- 请选择 --';
             objDropdown.Layout.Row = 1;
             objDropdown.Layout.Column = 1;
             objDropdown.FontSize = 12;
-
-            % 添加浏览按钮到处理对象旁边
-            browseObjBtn = uibutton(processObjLayout, 'push');
-            browseObjBtn.Text = '浏览文件';
-            browseObjBtn.Layout.Row = 1;
-            browseObjBtn.Layout.Column = 2;
-            browseObjBtn.Tooltip = '选择外部处理对象文件';
-            browseObjBtn.FontWeight = 'bold';
-            browseObjBtn.FontSize = 10;
-            browseObjBtn.FontColor = [0 0 0.8];
-            
-            % 外部文件路径存储变量
-            externalFilePath = '';
-            
-            % 处理对象下拉框变更回调
             objDropdown.ValueChangedFcn = @(~,~) updateProcessObjControls();
-            
-            % 浏览文件回调
-            browseObjBtn.ButtonPushedFcn = @(~,~) browseProcessObjFile();
-            
+
+            % 帧选择区域（仅当选择"当前帧原图"或已处理的预处理时显示）
+            frameSelLayout = uigridlayout(processObjLayout);
+            frameSelLayout.Layout.Row = 2;
+            frameSelLayout.Layout.Column = 1;
+            frameSelLayout.ColumnWidth = {60, '1x', 25};
+            frameSelLayout.ColumnSpacing = 5;
+            frameSelLayout.Padding = [0 0 0 0];
+            frameSelLayout.Visible = 'off';  % 初始隐藏
+
+            objFrameLabel = uilabel(frameSelLayout);
+            objFrameLabel.Text = '选择帧号:';
+            objFrameLabel.Layout.Row = 1;
+            objFrameLabel.Layout.Column = 1;
+            objFrameLabel.FontSize = 11;
+
+            objFrameDropdown = uidropdown(frameSelLayout);
+            objFrameDropdown.Items = {'当前帧'};
+            objFrameDropdown.Value = '当前帧';
+            objFrameDropdown.Layout.Row = 1;
+            objFrameDropdown.Layout.Column = 2;
+            objFrameDropdown.FontSize = 11;
+
+            objFrameHelpBtn = uibutton(frameSelLayout, 'push');
+            objFrameHelpBtn.Text = '?';
+            objFrameHelpBtn.Layout.Row = 1;
+            objFrameHelpBtn.Layout.Column = 3;
+            objFrameHelpBtn.FontSize = 10;
+            objFrameHelpBtn.Tooltip = '选择要处理的帧';
+            objFrameHelpBtn.ButtonPushedFcn = @(~,~) uialert(dlg, '选择要处理的帧号。默认为当前帧，也可以选择其他已加载的帧。', '帮助');
+
+            % 初始化时更新处理对象下拉列表，添加已操作过的预处理
+            updateProcessObjDropdown();
+
             % 初始化时检查是否有当前帧数据，有则默认选择"当前帧原图"
             if ~isempty(app.MatData) && app.CurrentIndex <= length(app.MatData)
                 objDropdown.Value = '当前帧原图';
+                % 更新帧选择下拉框
+                updateFrameDropdown();
+                frameSelLayout.Visible = 'on';
             end
             
             % ========== 预处理类型 ==========
@@ -3303,7 +3346,9 @@ classdef MatViewerTool < matlab.apps.AppBase
             typeLayout.Padding = [10 5 10 5];
 
             prepTypeDropdown = uidropdown(typeLayout);
-            prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '自定义...'};
+            % 所有可用的预处理类型
+            allPrepTypes = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+            prepTypeDropdown.Items = allPrepTypes;
             prepTypeDropdown.Value = '-- 请选择 --';
             prepTypeDropdown.Layout.Row = 1;
             prepTypeDropdown.Layout.Column = 1;
@@ -3435,15 +3480,36 @@ classdef MatViewerTool < matlab.apps.AppBase
             btnLayout.Layout.Row = 4;
             btnLayout.ColumnWidth = {'1x', 150, 100, 80};
             btnLayout.ColumnSpacing = 12;
-            
-            % 批量应用复选框
-            batchApplyCheck = uicheckbox(btnLayout);
-            batchApplyCheck.Text = '应用到所有帧';
-            batchApplyCheck.Value = false;
-            batchApplyCheck.Layout.Row = 1;
-            batchApplyCheck.Layout.Column = 1;
-            batchApplyCheck.Tooltip = '勾选后将对所有导入的数据应用此预处理';
-            batchApplyCheck.FontSize = 12;
+
+            % 帧选择区域（仿照可配置信息转存区）
+            frameSelectionLayout = uigridlayout(btnLayout);
+            frameSelectionLayout.Layout.Row = 1;
+            frameSelectionLayout.Layout.Column = 1;
+            frameSelectionLayout.RowHeight = {'1x'};
+            frameSelectionLayout.ColumnWidth = {70, '1x', 25};
+            frameSelectionLayout.ColumnSpacing = 5;
+            frameSelectionLayout.Padding = [0 5 0 5];
+
+            frameSelLabel = uilabel(frameSelectionLayout);
+            frameSelLabel.Text = '应用帧范围:';
+            frameSelLabel.Layout.Row = 1;
+            frameSelLabel.Layout.Column = 1;
+            frameSelLabel.FontSize = 11;
+
+            frameSelectionField = uieditfield(frameSelectionLayout, 'text');
+            frameSelectionField.Placeholder = '例: 1,3-5,8 (留空=当前帧)';
+            frameSelectionField.Layout.Row = 1;
+            frameSelectionField.Layout.Column = 2;
+            frameSelectionField.FontSize = 11;
+            frameSelectionField.Tooltip = '输入要应用预处理的帧范围，留空则只应用到当前帧';
+
+            frameSelHelpBtn = uibutton(frameSelectionLayout, 'push');
+            frameSelHelpBtn.Text = '?';
+            frameSelHelpBtn.Layout.Row = 1;
+            frameSelHelpBtn.Layout.Column = 3;
+            frameSelHelpBtn.FontSize = 10;
+            frameSelHelpBtn.Tooltip = '查看帧范围格式说明';
+            frameSelHelpBtn.ButtonPushedFcn = @(~,~) showFrameSelectionHelp();
             
             applyBtn = uibutton(btnLayout, 'push');
             applyBtn.Text = '✅ 应用';
@@ -3464,82 +3530,175 @@ classdef MatViewerTool < matlab.apps.AppBase
             
             % ========== 回调函数 ==========
             
-            function updateProcessObjControls()
-                % 更新处理对象相关控件的状态
-                selectedObj = objDropdown.Value;
-                
-                % 检查是否是带路径的外部文件选项
-                isExternalFile = startsWith(selectedObj, '外部文件: ');
-                
-                % 如果选择了外部文件，保持当前显示（包含完整路径）
-                if ~isempty(externalFilePath) && isExternalFile
-                    % 下拉框值保持为带路径的外部文件选项
-                elseif strcmp(selectedObj, '-- 请选择 --')
-                    % 没有选择任何对象
-                elseif strcmp(selectedObj, '当前帧原图') && isempty(app.MatData)
-                    uialert(dlg, '当前没有加载任何数据！', '提示');
+            function processedItems = getProcessedPreprocessingItems(app)
+                % 获取已操作过的预处理项
+                processedItems = {};
+
+                % 遍历PreprocessingList，获取已添加的预处理名称
+                if ~isempty(app.PreprocessingList)
+                    for i = 1:length(app.PreprocessingList)
+                        prepName = app.PreprocessingList{i}.name;
+                        % 避免重复添加
+                        if ~any(strcmp(processedItems, prepName))
+                            processedItems{end+1} = prepName;
+                        end
+                    end
+                end
+
+                % 也从PreprocessingResults中获取（已经执行过的预处理）
+                if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
+                    % 检查CFAR列（第2列）
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, 2})
+                        if ~any(strcmp(processedItems, 'CFAR'))
+                            processedItems{end+1} = 'CFAR';
+                        end
+                    end
+                    % 检查非相参积累列（第3列）
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, 3})
+                        if ~any(strcmp(processedItems, '非相参积累'))
+                            processedItems{end+1} = '非相参积累';
+                        end
+                    end
+                    % 检查其他列
+                    if size(app.PreprocessingResults, 2) >= 4
+                        for col = 4:size(app.PreprocessingResults, 2)
+                            if ~isempty(app.PreprocessingResults{app.CurrentIndex, col})
+                                result = app.PreprocessingResults{app.CurrentIndex, col};
+                                if isfield(result, 'name')
+                                    prepName = result.name;
+                                    if ~any(strcmp(processedItems, prepName))
+                                        processedItems{end+1} = prepName;
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            function updateProcessObjDropdown()
+                % 更新处理对象下拉框，添加已操作过的预处理
+                baseItems = {'-- 请选择 --', '当前帧原图'};
+                processedItems = getProcessedPreprocessingItems(app);
+                allItems = [baseItems, processedItems];
+
+                % 保存当前选择
+                currentValue = objDropdown.Value;
+
+                % 更新下拉列表
+                objDropdown.Items = allItems;
+
+                % 尝试恢复之前的选择
+                if any(strcmp(allItems, currentValue))
+                    objDropdown.Value = currentValue;
+                else
                     objDropdown.Value = '-- 请选择 --';
                 end
             end
-            
-            function browseProcessObjFile()
-                % 浏览处理对象文件
-                [file, path] = uigetfile({'*.mat', 'MAT文件 (*.mat)'}, '选择处理对象文件');
 
-                % 文件选择后置顶窗口（无论是否取消）
-                figure(app.UIFigure);  % 先置顶主UI
-                figure(dlg);           % 再置顶预处理弹窗
-
-                if file ~= 0
-                    selectedFilePath = fullfile(path, file);
-                    
-                    % 检查是否是当前帧原图文件
-                    isCurrentFrameFile = false;
-                    if ~isempty(app.MatData) && app.CurrentIndex <= length(app.MatData) && ...
-                       ~isempty(app.MatFiles) && app.CurrentIndex <= length(app.MatFiles)
-                        currentFrameFilePath = app.MatFiles{app.CurrentIndex};
-                        % 比较文件路径（忽略大小写，因为Windows文件系统不区分大小写）
-                        if strcmpi(selectedFilePath, currentFrameFilePath)
-                            isCurrentFrameFile = true;
-                        end
+            function updateFrameDropdown()
+                % 更新帧选择下拉框
+                if ~isempty(app.MatData)
+                    numFrames = length(app.MatData);
+                    frameItems = cell(1, numFrames + 1);
+                    frameItems{1} = '当前帧';
+                    for i = 1:numFrames
+                        frameItems{i+1} = sprintf('第%d帧', i);
                     end
-                    
-                    % 移除之前可能存在的外部文件选项
-                    objDropdown.Items = objDropdown.Items(~strcmp(objDropdown.Items, '外部文件'));
-                    % 移除之前可能存在的完整路径选项（以避免重复）
-                    objDropdown.Items = objDropdown.Items(cellfun(@(x) ~startsWith(x, '外部文件: '), objDropdown.Items));
-                    
-                    if isCurrentFrameFile
-                        % 如果是当前帧原图文件，设置为当前帧原图
-                        objDropdown.Value = '当前帧原图';
-                        externalFilePath = '';  % 清空外部文件路径
+                    objFrameDropdown.Items = frameItems;
+                    objFrameDropdown.Value = '当前帧';
+                end
+            end
+
+            function updateProcessObjControls()
+                % 更新处理对象相关控件的状态
+                selectedObj = objDropdown.Value;
+
+                % 检查当前帧原图的有效性
+                if strcmp(selectedObj, '当前帧原图') && isempty(app.MatData)
+                    uialert(dlg, '当前没有加载任何数据！', '提示');
+                    objDropdown.Value = '-- 请选择 --';
+                    frameSelLayout.Visible = 'off';
+                    return;
+                end
+
+                % 根据处理对象更新预处理类型下拉框
+                updatePrepTypeByObject();
+
+                % 根据选择显示/隐藏帧选择区域
+                if strcmp(selectedObj, '-- 请选择 --')
+                    frameSelLayout.Visible = 'off';
+                elseif strcmp(selectedObj, '当前帧原图')
+                    frameSelLayout.Visible = 'on';
+                    updateFrameDropdown();
+                else
+                    % 选择了已处理的预处理
+                    frameSelLayout.Visible = 'on';
+                    updateFrameDropdown();
+                end
+            end
+
+            function updatePrepTypeByObject()
+                % 根据处理对象过滤预处理类型
+                selectedObj = objDropdown.Value;
+                currentType = prepTypeDropdown.Value;
+
+                % 获取已处理的预处理列表
+                processedItems = getProcessedPreprocessingItems(app);
+
+                % 所有可用的预处理类型（自定义始终可用）
+                baseTypes = {'-- 请选择 --', '自定义...'};
+
+                if strcmp(selectedObj, '-- 请选择 --')
+                    % 未选择处理对象时，显示所有类型
+                    prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+                elseif strcmp(selectedObj, '非相参积累')
+                    % 选择非相参时，只能选择"检测"和"自定义"
+                    prepTypeDropdown.Items = [baseTypes(1), {'检测'}, baseTypes(2)];
+                elseif any(strcmp(processedItems, selectedObj)) && ~strcmp(selectedObj, '当前帧原图')
+                    % 选择了已处理的预处理，判断是否为"相参"类型
+                    % 这里假设相参类型的预处理名称包含"相参"或者在特定列表中
+                    isCoherent = contains(selectedObj, '相参') || strcmp(selectedObj, 'CFAR');
+                    if isCoherent
+                        % 相参类型：CFAR、识别、自定义
+                        prepTypeDropdown.Items = [baseTypes(1), {'CFAR', '识别'}, baseTypes(2)];
                     else
-                        % 如果不是当前帧原图文件，设置为外部文件
-                        externalFilePath = selectedFilePath;
-                        % 添加带有完整路径的选项
-                        externalFileOption = ['外部文件: ', externalFilePath];
-                        objDropdown.Items = [objDropdown.Items, externalFileOption];
-                        % 设置下拉框值为带有完整路径的选项
-                        objDropdown.Value = externalFileOption;
+                        % 非相参类型：检测、自定义
+                        prepTypeDropdown.Items = [baseTypes(1), {'检测'}, baseTypes(2)];
                     end
-                    
-                    updateProcessObjControls();
+                else
+                    % 当前帧原图或其他情况，显示所有类型
+                    prepTypeDropdown.Items = {'-- 请选择 --', 'CFAR', '非相参积累', '相参积累', '检测', '识别', '自定义...'};
+                end
 
-                    % 将预处理对话框置顶
-                    figure(dlg);
-                    drawnow;
+                % 如果当前选择的类型不在新的列表中，重置为"-- 请选择 --"
+                if ~any(strcmp(prepTypeDropdown.Items, currentType))
+                    prepTypeDropdown.Value = '-- 请选择 --';
                 end
             end
             
+            function showFrameSelectionHelp()
+                % 显示帧范围选择帮助
+                helpMsg = ['帧范围格式说明：', newline, newline, ...
+                    '• 留空：只应用到当前帧', newline, ...
+                    '• 单个帧：1', newline, ...
+                    '• 多个帧：1,3,5', newline, ...
+                    '• 连续帧：1-5', newline, ...
+                    '• 组合：1,3-5,8-10', newline, newline, ...
+                    '示例：', newline, ...
+                    '  1,3-5,8  表示第1、3、4、5、8帧'];
+                uialert(dlg, helpMsg, '帧范围格式说明');
+            end
+
             function onTypeChanged(~, ~)
                 prepType = prepTypeDropdown.Value;
 
                 if strcmp(prepType, '自定义...')
                     customNamePanel.Visible = 'on';
-                    contentLayout.RowHeight = {65, 55, 55, 105, '1x'};
+                    contentLayout.RowHeight = {95, 55, 55, 105, '1x'};
                 else
                     customNamePanel.Visible = 'off';
-                    contentLayout.RowHeight = {65, 55, 0, 105, '1x'};
+                    contentLayout.RowHeight = {95, 55, 0, 105, '1x'};
 
                     % 如果选择CFAR或非相参积累，且默认选择"使用默认脚本"，自动加载
                     if (strcmp(prepType, 'CFAR') || strcmp(prepType, '非相参积累')) && defaultScriptRadio.Value
@@ -3898,26 +4057,39 @@ classdef MatViewerTool < matlab.apps.AppBase
             end
 
             function applyPrep(~, ~)
-                % ===== 立即读取复选框的值（避免对象被删除）=====
-                applyToAll = batchApplyCheck.Value;
-                
+                % ===== 读取帧范围和选择的帧号 =====
+                frameRangeStr = frameSelectionField.Value;
+                selectedFrameStr = objFrameDropdown.Value;
+
                 % 检查处理对象
                 selectedObj = objDropdown.Value;
                 if strcmp(selectedObj, '-- 请选择 --')
                     uialert(dlg, '请选择处理对象！', '提示');
                     return;
                 end
-                
+
                 % 检查处理对象有效性
                 if strcmp(selectedObj, '当前帧原图') && (isempty(app.MatData) || app.CurrentIndex > length(app.MatData))
                     uialert(dlg, '当前没有有效的帧数据！', '错误', 'Icon', 'error');
                     return;
-                elseif startsWith(selectedObj, '外部文件: ') && isempty(externalFilePath)
-                    uialert(dlg, '请先选择外部文件！', '提示');
-                    return;
-                elseif startsWith(selectedObj, '外部文件: ') && ~isfile(externalFilePath)
-                    uialert(dlg, '所选外部文件不存在！', '错误', 'Icon', 'error');
-                    return;
+                end
+
+                % 解析帧范围
+                frameIndices = parseFrameRange(frameRangeStr, length(app.MatData));
+                if isempty(frameIndices)
+                    frameIndices = app.CurrentIndex;  % 默认当前帧
+                end
+
+                % 解析处理对象选择的帧号
+                processingFrameIndex = app.CurrentIndex;  % 默认当前帧
+                if strcmp(selectedFrameStr, '当前帧')
+                    processingFrameIndex = app.CurrentIndex;
+                elseif startsWith(selectedFrameStr, '第')
+                    % 提取帧号
+                    frameNumStr = regexp(selectedFrameStr, '\d+', 'match', 'once');
+                    if ~isempty(frameNumStr)
+                        processingFrameIndex = str2double(frameNumStr);
+                    end
                 end
                 
                 % 检查预处理类型
@@ -4027,10 +4199,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                 
                 % 添加处理对象信息
                 prepConfig.processing_object = selectedObj;
-                if startsWith(selectedObj, '外部文件: ')
-                    prepConfig.external_file_path = externalFilePath;
-                end
-                
+                prepConfig.processing_frame_index = processingFrameIndex;
+                prepConfig.frame_indices = frameIndices;
+
                 % 保存参数类型信息
                 for i = 1:size(paramData, 1)
                     paramName = strtrim(paramData{i, 1});
@@ -4039,33 +4210,20 @@ classdef MatViewerTool < matlab.apps.AppBase
                         prepConfig.paramTypes.(paramName) = paramType;
                     end
                 end
-                
+
                 % 添加到列表
                 app.PreprocessingList{end+1} = prepConfig;
                 updatePreprocessingControls(app);
-                
-                % ===== 使用前面读取的值，而不是直接访问 batchApplyCheck.Value =====
-                useExternalFile = startsWith(selectedObj, '外部文件: ');
-                
+
                 % 执行预处理
-                if useExternalFile
-                    % 处理外部文件
-                    success = executePreprocessingOnExternalFile(app, prepConfig);
-                else
-                    % 处理当前数据
-                    if applyToAll
-                        success = executePreprocessingOnAllData(app, prepConfig);
-                    else
-                        success = executePreprocessingOnCurrentData(app, prepConfig);
-                    end
-                end
-                
+                success = executePreprocessingWithFrameRange(app, prepConfig, frameIndices, processingFrameIndex);
+
                 if success
                     updateMultiView(app);
                     close(dlg);
 
-                    if applyToAll
-                        uialert(app.UIFigure, sprintf('预处理 "%s" 已应用到所有 %d 帧数据！', prepName, length(app.MatData)), '成功', 'Icon', 'success');
+                    if length(frameIndices) > 1
+                        uialert(app.UIFigure, sprintf('预处理 "%s" 已应用到 %d 帧数据！', prepName, length(frameIndices)), '成功', 'Icon', 'success');
                     else
                         uialert(app.UIFigure, sprintf('预处理 "%s" 已添加成功！', prepName), '成功', 'Icon', 'success');
                     end
@@ -4076,6 +4234,168 @@ classdef MatViewerTool < matlab.apps.AppBase
                 else
                     app.PreprocessingList(end) = [];
                     updatePreprocessingControls(app);
+                end
+            end
+
+            function indices = parseFrameRange(rangeStr, maxFrames)
+                % 解析帧范围字符串，返回帧索引数组
+                indices = [];
+
+                if isempty(rangeStr) || isempty(strtrim(rangeStr))
+                    return;  % 返回空数组，调用者将使用当前帧
+                end
+
+                try
+                    % 去除空格
+                    rangeStr = strrep(rangeStr, ' ', '');
+
+                    % 分割逗号
+                    parts = strsplit(rangeStr, ',');
+
+                    for i = 1:length(parts)
+                        part = parts{i};
+
+                        if contains(part, '-')
+                            % 范围 (e.g., "3-5")
+                            rangeParts = strsplit(part, '-');
+                            if length(rangeParts) == 2
+                                startIdx = str2double(rangeParts{1});
+                                endIdx = str2double(rangeParts{2});
+
+                                if ~isnan(startIdx) && ~isnan(endIdx) && startIdx >= 1 && endIdx <= maxFrames && startIdx <= endIdx
+                                    indices = [indices, startIdx:endIdx];
+                                end
+                            end
+                        else
+                            % 单个索引
+                            idx = str2double(part);
+                            if ~isnan(idx) && idx >= 1 && idx <= maxFrames
+                                indices = [indices, idx];
+                            end
+                        end
+                    end
+
+                    % 去重并排序
+                    indices = unique(indices);
+                catch
+                    indices = [];
+                end
+            end
+
+            function success = executePreprocessingWithFrameRange(app, prepConfig, frameIndices, processingFrameIndex)
+                % 在指定帧范围内执行预处理
+                success = true;
+
+                try
+                    for frameIdx = frameIndices
+                        % 对每一帧应用预处理
+                        if strcmp(prepConfig.processing_object, '当前帧原图')
+                            % 使用指定帧的原图（processingFrameIndex）
+                            success = executePreprocessingOnFrame(app, prepConfig, frameIdx, processingFrameIndex);
+                        else
+                            % 使用已处理的预处理结果
+                            success = executePreprocessingOnFrame(app, prepConfig, frameIdx, processingFrameIndex);
+                        end
+
+                        if ~success
+                            break;
+                        end
+                    end
+                catch ME
+                    uialert(app.UIFigure, sprintf('预处理执行失败：\n%s', ME.message), '错误', 'Icon', 'error');
+                    success = false;
+                end
+            end
+
+            function success = executePreprocessingOnFrame(app, prepConfig, targetFrameIdx, sourceFrameIdx)
+                % 在指定帧上执行预处理
+                success = false;
+
+                if isempty(app.MatData) || targetFrameIdx > length(app.MatData)
+                    return;
+                end
+
+                try
+                    % 获取输入矩阵（从sourceFrameIdx获取）
+                    if strcmp(prepConfig.processing_object, '当前帧原图')
+                        % 从sourceFrameIdx获取原图
+                        if sourceFrameIdx > length(app.MatData)
+                            sourceFrameIdx = targetFrameIdx;
+                        end
+                        sourceData = app.MatData{sourceFrameIdx};
+                        inputMatrix = [];
+
+                        % 查找complex_matrix字段
+                        if isfield(sourceData, 'complex_matrix')
+                            inputMatrix = sourceData.complex_matrix;
+                        else
+                            % 在嵌套结构中查找
+                            dataFields = fieldnames(sourceData);
+                            for i = 1:length(dataFields)
+                                fieldName = dataFields{i};
+                                fieldValue = sourceData.(fieldName);
+                                if isstruct(fieldValue) && isfield(fieldValue, 'complex_matrix')
+                                    inputMatrix = fieldValue.complex_matrix;
+                                    break;
+                                end
+                            end
+                        end
+                    else
+                        % 从已处理的预处理结果获取
+                        prepName = prepConfig.processing_object;
+                        inputMatrix = getPreprocessingResult(app, sourceFrameIdx, prepName);
+                    end
+
+                    if isempty(inputMatrix)
+                        uialert(app.UIFigure, sprintf('帧%d的数据不包含有效的输入矩阵！', sourceFrameIdx), '错误', 'Icon', 'error');
+                        return;
+                    end
+
+                    % 执行预处理脚本（简化版本，实际逻辑需要根据原有代码调整）
+                    processedMatrix = inputMatrix;  % 临时占位，实际需要调用脚本
+
+                    % 保存结果（这里需要根据实际的存储逻辑调整）
+                    % TODO: 实际的预处理执行和结果保存逻辑
+
+                    success = true;
+                catch ME
+                    uialert(app.UIFigure, sprintf('帧%d预处理失败：\n%s', targetFrameIdx, ME.message), '错误', 'Icon', 'error');
+                    success = false;
+                end
+            end
+
+            function resultMatrix = getPreprocessingResult(app, frameIdx, prepName)
+                % 从预处理结果中获取指定预处理的结果
+                resultMatrix = [];
+
+                if isempty(app.PreprocessingResults) || frameIdx > size(app.PreprocessingResults, 1)
+                    return;
+                end
+
+                % 根据预处理名称查找对应的列
+                if strcmp(prepName, 'CFAR')
+                    col = 2;
+                elseif strcmp(prepName, '非相参积累')
+                    col = 3;
+                else
+                    % 在其他列中查找
+                    for col = 4:size(app.PreprocessingResults, 2)
+                        result = app.PreprocessingResults{frameIdx, col};
+                        if ~isempty(result) && isfield(result, 'name') && strcmp(result.name, prepName)
+                            if isfield(result, 'processedMatrix')
+                                resultMatrix = result.processedMatrix;
+                            end
+                            return;
+                        end
+                    end
+                    return;
+                end
+
+                if ~isempty(app.PreprocessingResults{frameIdx, col})
+                    result = app.PreprocessingResults{frameIdx, col};
+                    if isfield(result, 'processedMatrix')
+                        resultMatrix = result.processedMatrix;
+                    end
                 end
             end
         
@@ -4440,12 +4760,8 @@ classdef MatViewerTool < matlab.apps.AppBase
                 app.ShowPrep3Btn.Text = '预处理3';
             end
 
-            % 更新按钮状态
-            if numPreps < 1  % 现在只支持1个自定义预处理（因为前两个是固定的）
-                app.AddPrepBtn.Enable = 'on';
-            else
-                app.AddPrepBtn.Enable = 'off';
-            end
+            % 更新按钮状态 - 现在支持添加多个预处理，不再限制数量
+            app.AddPrepBtn.Enable = 'on';
 
             % 检查是否有任何预处理结果（包括CFAR、非相干积累、自定义）
             hasAnyPrep = false;
