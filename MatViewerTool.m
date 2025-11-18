@@ -5241,83 +5241,94 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
 
         function updateMultiView(app)
-            % 更新多视图显示（基于已有的预处理结果）
-            
+            % 更新多视图显示（固定映射关系，确保标题和内容对应）
+
             if isempty(app.MatData) || app.CurrentIndex > length(app.MatData)
                 return;
             end
-            
+
             % 清空所有axes
             cla(app.ImageAxes1);
             cla(app.ImageAxes2);
             cla(app.ImageAxes3);
             cla(app.ImageAxes4);
-            
+
             % 默认隐藏所有视图
             app.ImageAxes1.Visible = 'off';
             app.ImageAxes2.Visible = 'off';
             app.ImageAxes3.Visible = 'off';
             app.ImageAxes4.Visible = 'off';
-            
-            % 统计需要显示的视图
-            views = [];
-            
-            % 原图始终显示
+
+            % 固定映射关系：
+            % ImageAxes1 = 原图 (viewIndex 1)
+            % ImageAxes2 = CFAR (viewIndex 2)
+            % ImageAxes3 = 非相参积累 (viewIndex 3)
+            % ImageAxes4 = 自定义预处理 (viewIndex 4)
+
+            % 检查每个视图是否应该显示
+            shouldShow = [false, false, false, false];
+
+            % 1. 原图
             if app.ShowOriginalCheck.Value
-                views(end+1) = 1;
+                shouldShow(1) = true;
             end
-            
-            % 检查预处理结果是否存在
+
+            % 2-4. 预处理结果（只有当该帧有对应的预处理结果时才显示）
             if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
-                % 预处理1
+                % CFAR (列2)
                 if ~isempty(app.PreprocessingResults{app.CurrentIndex, 2})
-                    views(end+1) = 2;
+                    shouldShow(2) = true;
                 end
-                % 预处理2
+                % 非相参积累 (列3)
                 if ~isempty(app.PreprocessingResults{app.CurrentIndex, 3})
-                    views(end+1) = 3;
+                    shouldShow(3) = true;
                 end
-                % 预处理3
-                if ~isempty(app.PreprocessingResults{app.CurrentIndex, 4})
-                    views(end+1) = 4;
+                % 自定义预处理 (列4)
+                if size(app.PreprocessingResults, 2) >= 4 && ~isempty(app.PreprocessingResults{app.CurrentIndex, 4})
+                    shouldShow(4) = true;
                 end
             end
-            
-            numViews = length(views);
-            
+
+            % 统计需要显示的视图数量和索引
+            visibleIndices = find(shouldShow);
+            numViews = length(visibleIndices);
+
             % 如果没有任何视图，至少显示原图
             if numViews == 0
-                views = 1;
+                shouldShow(1) = true;
+                visibleIndices = 1;
                 numViews = 1;
             end
-            
-            % 根据视图数量调整布局
+
+            % 所有axes的引用（按固定顺序）
             allAxes = {app.ImageAxes1, app.ImageAxes2, app.ImageAxes3, app.ImageAxes4};
-            
+
+            % 根据需要显示的视图数量调整布局
             switch numViews
                 case 1
                     % 单图全屏
-                    ax = allAxes{views(1)};
+                    viewIdx = visibleIndices(1);
+                    ax = allAxes{viewIdx};
                     ax.Visible = 'on';
                     ax.Layout.Row = [1 2];
                     ax.Layout.Column = [1 2];
-                    displayImageInAxes(app, ax, views(1));
-                    
+                    displayImageInAxes(app, ax, viewIdx);
+
                 case 2
                     % 两图横向排列
                     for i = 1:2
-                        viewIdx = views(i);
+                        viewIdx = visibleIndices(i);
                         ax = allAxes{viewIdx};
                         ax.Visible = 'on';
                         ax.Layout.Row = [1 2];
                         ax.Layout.Column = i;
                         displayImageInAxes(app, ax, viewIdx);
                     end
-                    
+
                 case 3
                     % 三图：上面2个，左下1个
                     for i = 1:3
-                        viewIdx = views(i);
+                        viewIdx = visibleIndices(i);
                         ax = allAxes{viewIdx};
                         ax.Visible = 'on';
                         if i <= 2
@@ -5329,11 +5340,11 @@ classdef MatViewerTool < matlab.apps.AppBase
                         end
                         displayImageInAxes(app, ax, viewIdx);
                     end
-                    
+
                 case 4
                     % 四图：2x2
                     for i = 1:4
-                        viewIdx = views(i);
+                        viewIdx = visibleIndices(i);
                         ax = allAxes{viewIdx};
                         ax.Visible = 'on';
                         ax.Layout.Row = ceil(i/2);
@@ -5341,8 +5352,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                         displayImageInAxes(app, ax, viewIdx);
                     end
             end
+
             % 更新关闭按钮位置
-            updateCloseButtonPositions(app);    
+            updateCloseButtonPositions(app);
         end
         
         function displayImageInAxes(app, ax, viewIndex)
@@ -5351,7 +5363,7 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             cla(ax);
 
-            % 获取数据和标题
+            % 获取数据和标题（确保标题与显示内容严格对应）
             if viewIndex == 1
                 % 显示原图
                 data = app.MatData{app.CurrentIndex};
@@ -5360,43 +5372,30 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 显示预处理结果
                 if ~isempty(app.PreprocessingResults) && ...
                    app.CurrentIndex <= size(app.PreprocessingResults, 1) && ...
+                   viewIndex <= size(app.PreprocessingResults, 2) && ...
                    ~isempty(app.PreprocessingResults{app.CurrentIndex, viewIndex})
                     % 有预处理结果
                     data = app.PreprocessingResults{app.CurrentIndex, viewIndex};
 
-                    % 根据viewIndex确定标题
-                    if viewIndex == 2
-                        titleStr = 'CFAR';
-                    elseif viewIndex == 3
-                        titleStr = '非相参积累';
-                    elseif viewIndex == 4
-                        % 自定义预处理，从PreprocessingList获取
-                        if ~isempty(app.PreprocessingList)
-                            titleStr = app.PreprocessingList{1}.name;
-                        else
-                            titleStr = '自定义预处理';
-                        end
+                    % 优先从结果数据中获取名称，确保标题准确
+                    if isstruct(data) && isfield(data, 'name')
+                        titleStr = data.name;
                     else
-                        titleStr = sprintf('预处理%d', viewIndex);
+                        % 如果结果中没有名称，根据viewIndex确定默认标题
+                        if viewIndex == 2
+                            titleStr = 'CFAR';
+                        elseif viewIndex == 3
+                            titleStr = '非相参积累';
+                        elseif viewIndex == 4
+                            titleStr = '自定义预处理';
+                        else
+                            titleStr = sprintf('预处理%d', viewIndex);
+                        end
                     end
                 else
-                    % 如果预处理结果不存在，显示原图
-                    data = app.MatData{app.CurrentIndex};
-
-                    % 根据viewIndex确定待处理标题
-                    if viewIndex == 2
-                        titleStr = 'CFAR (待处理)';
-                    elseif viewIndex == 3
-                        titleStr = '非相参积累 (待处理)';
-                    elseif viewIndex == 4
-                        if ~isempty(app.PreprocessingList)
-                            titleStr = sprintf('%s (待处理)', app.PreprocessingList{1}.name);
-                        else
-                            titleStr = '自定义预处理 (待处理)';
-                        end
-                    else
-                        titleStr = sprintf('预处理%d (待处理)', viewIndex);
-                    end
+                    % 该帧没有此预处理结果，不应该显示
+                    % 这个分支理论上不应该被执行到（因为updateMultiView已经检查过）
+                    return;
                 end
             end
             
