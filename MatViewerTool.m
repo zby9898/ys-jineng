@@ -1607,10 +1607,14 @@ classdef MatViewerTool < matlab.apps.AppBase
             app.AddPrepBtn.Enable = 'on';
             app.ShowPrep1Btn.Enable = 'on';  % 启用CFAR按钮
             app.ShowPrep2Btn.Enable = 'on';  % 启用非相参积累按钮
+            app.ShowCoherentBtn.Enable = 'on';  % 启用相参积累按钮
+            app.ShowDetectionBtn.Enable = 'on';  % 启用检测按钮
+            app.ShowRecognitionBtn.Enable = 'on';  % 启用识别按钮
 
             % 初始化预处理结果存储
+            % 列：1=保留, 2=CFAR, 3=非相参积累, 4=自定义, 5=相参积累, 6=检测, 7=识别
             if isempty(app.PreprocessingResults)
-                app.PreprocessingResults = cell(length(app.MatData), 4);
+                app.PreprocessingResults = cell(length(app.MatData), 7);
             end
 
             % 更新预处理控件显示（重置为初始状态）
@@ -4455,7 +4459,7 @@ classdef MatViewerTool < matlab.apps.AppBase
                 
                 % 初始化结果缓存
                 if isempty(app.PreprocessingResults)
-                    app.PreprocessingResults = cell(totalFrames, 4);
+                    app.PreprocessingResults = cell(totalFrames, 7);
                 end
                 
                 % 遍历所有帧
@@ -4818,9 +4822,9 @@ classdef MatViewerTool < matlab.apps.AppBase
                 save(outputFile, '-struct', 'saveData');
 
                 % 保存到结果缓存
-                % 现在缓存布局：1=原图, 2=CFAR, 3=非相参积累, 4=自定义预处理
+                % 缓存布局：1=保留, 2=CFAR, 3=非相参积累, 4=自定义, 5=相参积累, 6=检测, 7=识别
                 if isempty(app.PreprocessingResults)
-                    app.PreprocessingResults = cell(length(app.MatData), 4);
+                    app.PreprocessingResults = cell(length(app.MatData), 7);
                 end
 
                 % 自定义预处理始终保存到第4列
@@ -5116,10 +5120,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 % 确保缓存已初始化
                 if isempty(app.PreprocessingResults)
                     % 根据当前索引创建足够大的缓存
-                    app.PreprocessingResults = cell(max(1, app.CurrentIndex), 4);
+                    app.PreprocessingResults = cell(max(1, app.CurrentIndex), 7);
                 elseif app.CurrentIndex > size(app.PreprocessingResults, 1)
                     % 扩展缓存以适应当前索引
-                    app.PreprocessingResults = [app.PreprocessingResults; cell(app.CurrentIndex - size(app.PreprocessingResults, 1), 4)];
+                    app.PreprocessingResults = [app.PreprocessingResults; cell(app.CurrentIndex - size(app.PreprocessingResults, 1), 7)];
                 end
                 
                 % 保存到预处理结果缓存的第4列（自定义预处理列），使用当前索引作为行索引
@@ -5267,10 +5271,10 @@ classdef MatViewerTool < matlab.apps.AppBase
                 viewList{end+1} = struct('data', app.MatData{app.CurrentIndex}, 'title', '原图', 'sourceColumn', 0);
             end
 
-            % 2. 收集所有预处理结果（按顺序：CFAR → 非相参积累 → 自定义预处理）
+            % 2. 收集所有预处理结果（按顺序遍历所有列）
             if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
-                % 遍历PreprocessingResults的第2-4列
-                for col = 2:min(4, size(app.PreprocessingResults, 2))
+                % 遍历PreprocessingResults的第2-7列
+                for col = 2:min(7, size(app.PreprocessingResults, 2))
                     if ~isempty(app.PreprocessingResults{app.CurrentIndex, col})
                         result = app.PreprocessingResults{app.CurrentIndex, col};
 
@@ -5287,6 +5291,12 @@ classdef MatViewerTool < matlab.apps.AppBase
                                 title = '非相参积累';
                             elseif col == 4
                                 title = '自定义预处理';
+                            elseif col == 5
+                                title = '相参积累';
+                            elseif col == 6
+                                title = '检测';
+                            elseif col == 7
+                                title = '识别';
                             else
                                 title = sprintf('预处理%d', col-1);
                             end
@@ -5904,8 +5914,8 @@ classdef MatViewerTool < matlab.apps.AppBase
         end
 
         function executeDefaultPrep(app, defaultPrepIndex)
-            % 执行默认预处理（CFAR或非相参积累）
-            % defaultPrepIndex: 1=CFAR, 2=非相参积累
+            % 执行默认预处理
+            % defaultPrepIndex: 1=CFAR, 2=非相参积累, 3=相参积累, 4=检测, 5=识别
 
             if isempty(app.MatData) || app.CurrentIndex > length(app.MatData)
                 uialert(app.UIFigure, '请先导入数据', '提示');
@@ -5926,6 +5936,21 @@ classdef MatViewerTool < matlab.apps.AppBase
                 scriptFile = fullfile(scriptPath, 'default_noncoherent_integration.m');
                 prepName = '非相参积累';
                 prepType = '非相参积累';
+            elseif defaultPrepIndex == 3
+                % 相参积累
+                scriptFile = fullfile(scriptPath, 'default_coherent_integration.m');
+                prepName = '相参积累';
+                prepType = '相参积累';
+            elseif defaultPrepIndex == 4
+                % 检测
+                scriptFile = fullfile(scriptPath, 'default_detection.m');
+                prepName = '检测';
+                prepType = '检测';
+            elseif defaultPrepIndex == 5
+                % 识别
+                scriptFile = fullfile(scriptPath, 'default_recognition.m');
+                prepName = '识别';
+                prepType = '识别';
             else
                 return;
             end
@@ -6171,12 +6196,16 @@ classdef MatViewerTool < matlab.apps.AppBase
 
                 % 初始化预处理结果缓存
                 if isempty(app.PreprocessingResults)
-                    app.PreprocessingResults = cell(length(app.MatData), 4);
+                    app.PreprocessingResults = cell(length(app.MatData), 7);
                 end
 
-                % 保存到结果缓存（默认预处理固定位置：CFAR=2, 非相参积累=3）
-                cacheIndex = defaultPrepIndex + 1;  % 1->2, 2->3
-                app.PreprocessingResults{app.CurrentIndex, cacheIndex} = processedData;
+                % 保存到结果缓存（固定位置映射）
+                % 映射：1→2(CFAR), 2→3(非相参积累), 3→5(相参积累), 4→6(检测), 5→7(识别)
+                cacheIndexMap = [2, 3, 5, 6, 7];
+                if defaultPrepIndex >= 1 && defaultPrepIndex <= 5
+                    cacheIndex = cacheIndexMap(defaultPrepIndex);
+                    app.PreprocessingResults{app.CurrentIndex, cacheIndex} = processedData;
+                end
 
                 % 恢复状态
                 app.StatusLabel.Text = oldStatus;
