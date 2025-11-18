@@ -5922,6 +5922,30 @@ classdef MatViewerTool < matlab.apps.AppBase
                 return;
             end
 
+            % 检查当前显示的视图数量
+            numCurrentViews = checkCurrentViewCount(app);
+
+            % 检查即将添加的处理是否已经存在
+            cacheIndexMap = [2, 3, 5, 6, 7];
+            targetCacheIndex = cacheIndexMap(defaultPrepIndex);
+            willReplaceExisting = false;
+
+            if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
+                if targetCacheIndex <= size(app.PreprocessingResults, 2)
+                    willReplaceExisting = ~isempty(app.PreprocessingResults{app.CurrentIndex, targetCacheIndex});
+                end
+            end
+
+            % 如果已经有4个视图且不是替换现有的，需要让用户选择关闭哪个
+            if numCurrentViews >= 4 && ~willReplaceExisting
+                % 弹窗让用户选择关闭哪个视图
+                success = promptToCloseView(app);
+                if ~success
+                    % 用户取消了操作
+                    return;
+                end
+            end
+
             % 获取当前脚本所在目录
             scriptPath = fileparts(mfilename('fullpath'));
 
@@ -6219,6 +6243,105 @@ classdef MatViewerTool < matlab.apps.AppBase
 
             catch ME
                 uialert(app.UIFigure, sprintf('加载默认预处理失败：\n%s', ME.message), '错误');
+            end
+        end
+
+        function numViews = checkCurrentViewCount(app)
+            % 统计当前显示的视图数量
+            numViews = 0;
+
+            % 检查是否显示原图
+            if app.ShowOriginalCheck.Value
+                numViews = numViews + 1;
+            end
+
+            % 检查所有预处理结果
+            if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
+                for col = 2:min(7, size(app.PreprocessingResults, 2))
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, col})
+                        numViews = numViews + 1;
+                    end
+                end
+            end
+        end
+
+        function success = promptToCloseView(app)
+            % 弹窗让用户选择关闭哪个视图
+            success = false;
+
+            % 收集当前所有显示的视图信息
+            viewOptions = {};
+            viewColumns = [];
+
+            % 检查原图
+            if app.ShowOriginalCheck.Value
+                viewOptions{end+1} = '原图';
+                viewColumns(end+1) = 0;
+            end
+
+            % 检查所有预处理结果
+            if ~isempty(app.PreprocessingResults) && app.CurrentIndex <= size(app.PreprocessingResults, 1)
+                for col = 2:min(7, size(app.PreprocessingResults, 2))
+                    if ~isempty(app.PreprocessingResults{app.CurrentIndex, col})
+                        result = app.PreprocessingResults{app.CurrentIndex, col};
+
+                        % 获取显示名称
+                        if isstruct(result) && isfield(result, 'name')
+                            title = result.name;
+                        elseif isstruct(result) && isfield(result, 'preprocessing_info') && isfield(result.preprocessing_info, 'name')
+                            title = result.preprocessing_info.name;
+                        else
+                            % 使用默认标题
+                            if col == 2
+                                title = 'CFAR';
+                            elseif col == 3
+                                title = '非相参积累';
+                            elseif col == 4
+                                title = '自定义预处理';
+                            elseif col == 5
+                                title = '相参积累';
+                            elseif col == 6
+                                title = '检测';
+                            elseif col == 7
+                                title = '识别';
+                            else
+                                title = sprintf('预处理%d', col-1);
+                            end
+                        end
+
+                        viewOptions{end+1} = title;
+                        viewColumns(end+1) = col;
+                    end
+                end
+            end
+
+            % 弹出选择对话框
+            if isempty(viewOptions)
+                success = true;
+                return;
+            end
+
+            [selection, ok] = listdlg(...
+                'PromptString', {'当前已有4个视图，无法添加更多。', '请选择要关闭的视图：'}, ...
+                'SelectionMode', 'single', ...
+                'ListString', viewOptions, ...
+                'ListSize', [300, 150], ...
+                'Name', '关闭视图');
+
+            if ok && ~isempty(selection)
+                % 关闭选中的视图
+                columnToClose = viewColumns(selection);
+                if columnToClose == 0
+                    % 关闭原图
+                    app.ShowOriginalCheck.Value = false;
+                else
+                    % 关闭预处理结果
+                    app.PreprocessingResults{app.CurrentIndex, columnToClose} = [];
+                end
+
+                % 更新显示
+                updateMultiView(app);
+                success = true;
             end
         end
 
